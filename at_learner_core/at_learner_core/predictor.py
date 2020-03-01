@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from tqdm import tqdm
+import os
 import torch
 from . import models
 from . import utils
@@ -13,6 +14,7 @@ class Predictor(object):
         self.model_config = model_config
         self.device = torch.device("cuda" if self.test_config.ngpu else "cpu")
         checkpoint = torch.load(checkpoint_path, map_location='cpu')
+        self.epoch = '.'.join(os.path.basename(checkpoint_path).split('_')[-1].split('.')[:-1])
 
         self._init_wrapper(checkpoint)
         self._init_loaders()
@@ -33,6 +35,10 @@ class Predictor(object):
         if dataset_config.transform_source == 'model_config':
             transforms = self.model_config.datalist_config.testlist_configs.transforms
             setattr(dataset_config, 'transforms', transforms)
+
+        if dataset_config.seq_transform_source == 'model_config':
+            seq_transforms = self.model_config.datalist_config.testlist_configs.sequence_transforms
+            setattr(dataset_config, 'sequence_transforms', seq_transforms)
         dataset = DatasetManager._get_dataset(dataset_config)
         self.test_loader = DatasetManager.get_dataloader_by_args(dataset=dataset,
                                                                  batch_size=dataset_config.batch_size,
@@ -49,15 +55,14 @@ class Predictor(object):
                                         total=len(self.test_loader)):
                 if isinstance(data, dict) or isinstance(data, OrderedDict):
                     for k, v in data.items():
-                        data[k] = v.to(self.device)
+                        if isinstance(v, torch.Tensor):
+                            data[k] = v.to(self.device)
                 else:
                     data = data.to(self.device)
 
                 output_dict, batch_loss = self.wrapper(data)
 
-                self.test_info.update((batch_loss,
-                                       output_dict[self.test_info.target_column],
-                                       output_dict['output']))
+                self.test_info.update(batch_loss, output_dict)
                 self.logger.log_batch(batch_idx)
 
         self.logger.log_epoch()

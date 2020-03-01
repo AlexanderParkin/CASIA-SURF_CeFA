@@ -128,9 +128,13 @@ class MobileNetV2(nn.Module):
                     nn.init.normal_(m.weight, 0, 0.01)
                     nn.init.zeros_(m.bias)
         else:
-            pretrained_weights = torch.load(pretrained_weights_dict[pretrained], 
+            pretrained_weights = torch.load(pretrained,
                                             map_location='cpu')
-            self.load_state_dict(pretrained_weights)
+            pretrained_weights = pretrained_weights['state_dict']
+            new_weights = self.state_dict()
+            for k, v in new_weights.items():
+                new_weights[k] = pretrained_weights['backbone.' + k]
+            self.load_state_dict(new_weights)
 
     def forward(self, x):
         x = self.features(x)

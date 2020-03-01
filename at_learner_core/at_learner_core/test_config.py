@@ -25,9 +25,9 @@ def get_config():
         },
 
         'logger_config': {
-            'logger_type': 'tensorboard',
+            'logger_type': 'test_filelogger',
             'show_metrics': {
-                'name': 'tpr@fpr',
+                'name': 'roc-curve',
                 'fpr': 0.01
             },
         }

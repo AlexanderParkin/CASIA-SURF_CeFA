@@ -16,5 +16,7 @@ def get_logger(model, logger_config=None):
         return tensorboard_logger.TestTensorboardLogger(model, logger_config)
     elif logger_config.logger_type == 'test_filelogger':
         return file_logger.TestFileLogger(model, logger_config)
+    elif logger_config.logger_type == 'test_terminal':
+        return terminal_logger.TestTerminalLogger(model, logger_config)
     else:
         raise Exception('Unknown logger type')

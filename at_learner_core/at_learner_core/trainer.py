@@ -31,6 +31,20 @@ class Runner(object):
 
     def _init_wrapper(self):
         self.wrapper = models.get_wrapper(self.config)
+
+        if hasattr(self.config.wrapper_config, 'freeze_weights') and self.config.wrapper_config.freeze_weights:
+            import re
+            if type(self.config.wrapper_config.freeze_weights) == str:
+                regexes = [self.config.wrapper_config.freeze_weights]
+            else:
+                regexes = self.config.wrapper_config.freeze_weights
+
+            for param_name, param in self.wrapper.named_parameters():
+                for regex in regexes:
+                    if re.search(regex, param_name):
+                        param.requires_grad = False
+                        break
+
         self.wrapper = self.wrapper.to(self.device)
 
     def _init_optimizer(self):
@@ -46,8 +60,27 @@ class Runner(object):
     def _init_metrics(self):
         self.train_info = utils.LossMetricsMeter(self.config.test_process_config)
         self.test_info = utils.LossMetricsMeter(self.config.test_process_config)
+        self.best_test_info = utils.meters.AverageMeter()
         self.batch_time = utils.meters.AverageMeter()
         return
+
+    def _check_best_epoch(self):
+        if self.config.test_process_config.metric.name == 'acer':
+            all_metrics_dict = self.test_info.metric.get_all_metrics()
+            for k, v in all_metrics_dict.items():
+                if k != 0.5:
+                    curr_acer = v['acer']
+                    break
+            if self.best_test_info.count == 0:
+                self.best_test_info.update(curr_acer)
+                self.best_epoch = True
+                return
+            else:
+                if curr_acer < self.best_test_info.val:
+                    self.best_test_info.update(curr_acer, 0)
+                    self.best_epoch = True
+                    return
+        self.best_epoch = False
 
     def _init_loaders(self):
         self.train_loader = DatasetManager.get_dataloader(self.config.datalist_config.trainlist_config,
@@ -73,11 +106,22 @@ class Runner(object):
             self._process_on_epoch_start()
             self._train_epoch()
             self.lr_scheduler.step()
-            self._test_epoch()
+
+            if hasattr(self.config.test_process_config, 'run_frequency'):
+                if self.config.test_process_config.run_frequency == -1:
+                    pass
+                elif epoch % self.config.test_process_config.run_frequency == 0:
+                    self._test_epoch()
+            else:
+                self._test_epoch()
+
+            self._check_best_epoch()
             self.logger.log_epoch()
-            
             self.state.create()
-            self.state.save()
+            if self.best_epoch:
+                self.state.save_checkpoint('best_model_{epoch}.pth'.format(epoch=str(self.epoch).zfill(4)))
+            else:
+                self.state.save()
 
     def _process_on_epoch_start(self):
         """
@@ -97,9 +141,10 @@ class Runner(object):
             if isinstance(data, dict) or isinstance(data, OrderedDict):
                 for k, v in data.items():
                     if isinstance(v, list):
-                        data[k] = [x.to(self.device) for x in v]
+                        data[k] = [x.to(self.device) if isinstance(x, torch.Tensor) else x for x in v]
                     else:
-                        data[k] = v.to(self.device)
+                        if isinstance(v, torch.Tensor):
+                            data[k] = v.to(self.device)
             else:
                 data = data.to(self.device)
 
@@ -108,9 +153,7 @@ class Runner(object):
             batch_loss.backward()
             self.optimizer.step()
             
-            self.train_info.update((batch_loss,
-                                    output_dict[self.train_info.target_column],
-                                    output_dict['output']))
+            self.train_info.update(batch_loss, output_dict)
             self.batch_time.update(time.time() - time_stamp)
             time_stamp = time.time()
             
@@ -128,17 +171,16 @@ class Runner(object):
                 if isinstance(data, dict) or isinstance(data, OrderedDict):
                     for k, v in data.items():
                         if isinstance(v, list):
-                            data[k] = [x.to(self.device) for x in v]
+                            data[k] = [x.to(self.device) if isinstance(x, torch.Tensor) else x for x in v]
                         else:
-                            data[k] = v.to(self.device)
+                            if isinstance(v, torch.Tensor):
+                                data[k] = v.to(self.device)
                 else:
                     data = data.to(self.device)
 
                 output_dict, batch_loss = self.wrapper(data)
                                 
-                self.test_info.update((batch_loss,
-                                       output_dict[self.test_info.target_column],
-                                       output_dict['output']))
+                self.test_info.update(batch_loss, output_dict)
                 self.batch_time.update(time.time() - time_stamp)
                 time_stamp = time.time()
                 self.logger.log_batch(batch_idx)

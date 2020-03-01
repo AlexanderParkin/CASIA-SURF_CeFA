@@ -35,10 +35,13 @@ class LossMetricsMeter(object):
         if self.metric:
             self.metric.reset()
 
-    def update(self, info):
-        self.loss.update(info[0])
+    def update(self, loss, output_dict):
+        self.loss.update(loss)
         if self.metric:
-            self.metric.update(info[1], info[2])
+            # self.target_column and output as args and other info from output_dict
+            self.metric.update(output_dict.pop(self.target_column),
+                               output_dict.pop('output'),
+                               output_dict)
 
 
 class AccuracyMeter(object):
@@ -51,7 +54,7 @@ class AccuracyMeter(object):
         self.target = np.empty((0), dtype=np.int32)
         self.predict = np.empty((0, self.nclasses), dtype=np.float32)
 
-    def update(self, target, predict):
+    def update(self, target, predict, other_info):
         self.target = np.hstack((self.target, target))
         self.predict = np.vstack((self.predict, predict))
 
@@ -67,12 +70,14 @@ class ACERMeter(object):
     def __init__(self):
         self.target = np.ones(0)
         self.output = np.ones(0)
+        self.other_info = []
 
     def reset(self):
         self.target = np.ones(0)
         self.output = np.ones(0)
+        self.other_info = {}
 
-    def update(self, target, output):
+    def update(self, target, output, other_info):
         # If we use cross-entropy
         if len(output.shape) > 1:
             if output.shape[1] > 1:
@@ -85,8 +90,17 @@ class ACERMeter(object):
         self.target = np.hstack([self.target, target])
         self.output = np.hstack([self.output, output])
 
-    def get_all_metrics(self, thr):
+        if len(other_info) > 0:
+            for k, v in other_info.items():
+                if k in self.other_info:
+                    self.other_info[k].extend(v)
+                else:
+                    self.other_info[k] = v
+
+    def get_all_metrics(self, thr=0.5):
         ":return ACER, APCER, BPCER"
+
+        result_dict = {}
         y_pred_bin = self.output.copy()
         y_pred_bin[y_pred_bin < thr] = 0
         y_pred_bin[y_pred_bin >= thr] = 1
@@ -96,8 +110,11 @@ class ACERMeter(object):
         apcer = fp / (tn + fp)
         bpcer = fn / (fn + tp)
         acer = (apcer + bpcer) / 2
+        result_dict[thr] = {'acer': acer,
+                            'apcer': apcer,
+                            'bpcer': bpcer}
 
-        return acer, apcer, bpcer
+        return result_dict
 
 
 class ROCMeter(object):
@@ -111,7 +128,7 @@ class ROCMeter(object):
         self.target = np.ones(0)
         self.output = np.ones(0)
 
-    def update(self, target, output):
+    def update(self, target, output, other_info):
         # If we use cross-entropy
         if len(output.shape) > 1:
             if output.shape[1] > 1:
@@ -123,6 +140,13 @@ class ROCMeter(object):
 
         self.target = np.hstack([self.target, target])
         self.output = np.hstack([self.output, output])
+
+        if len(other_info) > 0:
+            for k, v in other_info.items():
+                if k in self.other_info:
+                    self.other_info[k].extend(v)
+                else:
+                    self.other_info[k] = v
 
     def get_roc_curve(self):
         fpr, tpr, thr = roc_curve(self.target, self.output)

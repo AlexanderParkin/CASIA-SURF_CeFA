@@ -43,15 +43,15 @@ class Compose(object):
     def __init__(self, transforms):
         self.transforms = transforms
 
-    def __call__(self, *imgs):
-        if len(imgs) == 1:
-            img = imgs[0]
+    def __call__(self, imgs):
+        if type(imgs) != list:
+            img = imgs
             for t in self.transforms:
                 img = t(img)
             return img
         else:
             for t in self.transforms:
-                imgs = t(*imgs)
+                imgs = t(imgs)
             return imgs
 
     def __repr__(self):
@@ -63,20 +63,24 @@ class Compose(object):
         return format_string
 
 
+    
+    
+    
+
 class ToTensor(object):
     """Convert a ``PIL Image`` or ``numpy.ndarray`` to tensor.
     Converts a PIL Image or numpy.ndarray (H x W x C) in the range
     [0, 255] to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0].
     """
 
-    def __call__(self, *pics):
+    def __call__(self, pics):
         """
         Args:
             pic (PIL Image or numpy.ndarray): Image to be converted to tensor.
         Returns:
             Tensor: Converted image.
         """
-        out = tuple(F.to_tensor(pic) for pic in pics)
+        out = list(F.to_tensor(pic) for pic in pics)
         if len(out) == 1:
             return out[0]
         else:
@@ -110,7 +114,7 @@ class ToPILImage(object):
         Returns:
             PIL Image: Image converted to PIL Image.
         """
-        out = tuple(F.to_pil_image(pic, self.mode) for pic in pics)
+        out = list(F.to_pil_image(pic, self.mode) for pic in pics)
         if len(out) == 1:
             return out[0]
         else:
@@ -138,14 +142,14 @@ class Normalize(object):
         self.mean = mean
         self.std = std
 
-    def __call__(self, *tensors):
+    def __call__(self, tensors):
         """
         Args:
             tensor (Tensor): Tensor image of size (C, H, W) to be normalized.
         Returns:
             Tensor: Normalized Tensor image.
         """
-        out = tuple(F.normalize(tensor, self.mean, self.std) for tensor in tensors)
+        out = list(F.normalize(tensor, self.mean, self.std) for tensor in tensors)
         if len(out) == 1:
             return out[0]
         else:
@@ -172,14 +176,14 @@ class Resize(object):
         self.size = size
         self.interpolation = interpolation
 
-    def __call__(self, *imgs):
+    def __call__(self, imgs):
         """
         Args:
             img (PIL Image): Image to be scaled.
         Returns:
             PIL Image: Rescaled image.
         """
-        out = tuple(F.resize(img, self.size, self.interpolation) for img in imgs)
+        out = list(F.resize(img, self.size, self.interpolation) for img in imgs)
         if len(out) == 1:
             return out[0]
         else:
@@ -215,14 +219,14 @@ class CenterCrop(object):
         else:
             self.size = size
 
-    def __call__(self, *imgs):
+    def __call__(self, imgs):
         """
         Args:
             img (PIL Image): Image to be cropped.
         Returns:
             PIL Image: Cropped image.
         """
-        out = tuple(F.center_crop(img, self.size) for img in imgs)
+        out = list(F.center_crop(img, self.size) for img in imgs)
         if len(out) == 1:
             return out[0]
         else:
@@ -408,7 +412,7 @@ class RandomCrop(object):
         j = random.randint(0, w - tw)
         return i, j, th, tw
 
-    def __call__(self, *imgs):
+    def __call__(self, imgs):
         """
         Args:
             img (PIL Image): Image to be cropped.
@@ -424,7 +428,7 @@ class RandomCrop(object):
                 for img in imgs)
         # pad the height if needed
         if self.pad_if_needed:
-            imgs = tuple(
+            imgs = list(
                 F.pad(img, (0, int((1 + self.size[0] - img.size[1]) / 2))) if img.size[1] < self.size[0] else img
                 for img in imgs)
         i, j, h, w = self.get_params(imgs[0], self.size)
@@ -447,7 +451,7 @@ class RandomHorizontalFlip(object):
     def __init__(self, p=0.5):
         self.p = p
 
-    def __call__(self, *imgs):
+    def __call__(self, imgs):
         """
         Args:
             img (PIL Image): Image to be flipped.
@@ -455,7 +459,7 @@ class RandomHorizontalFlip(object):
             PIL Image: Randomly flipped image.
         """
         if random.random() < self.p:
-            out = tuple(F.hflip(img) for img in imgs)
+            out = list(F.hflip(img) for img in imgs)
         else:
             out = imgs
         if len(out) == 1:
@@ -484,7 +488,7 @@ class RandomVerticalFlip(object):
             PIL Image: Randomly flipped image.
         """
         if random.random() < self.p:
-            out = tuple(F.vflip(img) for img in imgs)
+            out = list(F.vflip(img) for img in imgs)
         else:
             out = imgs
         if len(out) == 1:
@@ -548,7 +552,7 @@ class RandomResizedCrop(object):
         j = (img.size[0] - w) // 2
         return i, j, w, w
 
-    def __call__(self, *imgs):
+    def __call__(self, imgs):
         """
         Args:
             img (PIL Image): Image to be cropped and resized.
@@ -749,7 +753,7 @@ class ColorJitter(object):
 
         return transform
 
-    def __call__(self, *imgs):
+    def __call__(self, imgs):
         """
         Args:
             img (PIL Image): Input image.
@@ -758,7 +762,7 @@ class ColorJitter(object):
         """
         transform = self.get_params(self.brightness, self.contrast,
                                     self.saturation, self.hue)
-        out = tuple(transform(img) for img in imgs)
+        out = list(transform(img) for img in imgs)
         if len(out) == 1:
             return out[0]
         else:
@@ -816,14 +820,14 @@ class RandomRotation(object):
 
         return angle
 
-    def __call__(self, *imgs):
+    def __call__(self, imgs):
         """
             img (PIL Image): Image to be rotated.
         Returns:
             PIL Image: Rotated image.
         """
         angle = self.get_params(self.degrees)
-        out = tuple(F.rotate(img, angle, self.resample, self.expand, self.center) for img in imgs)
+        out = list(F.rotate(img, angle, self.resample, self.expand, self.center) for img in imgs)
         if len(out) == 1:
             return out[0]
         else:

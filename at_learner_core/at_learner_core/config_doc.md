@@ -1,4 +1,5 @@
 # Каким должен быть config файл
+# Каким должен быть config файл
 Конфигурационный файл, подаваемый на вход `at_learner_core.trainer.Model` является `argparse.Namespace` объектом.
 Можно создать объект `dict` и перегнать его в `Namespace` при помощи `at_learner_core.configs.dict_to_namespace`.
 
