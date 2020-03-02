@@ -59,6 +59,8 @@ class VideoDataset(torch.utils.data.Dataset):
         if self.transforms is not None:
             item_dict = self.transforms(item_dict)
 
+        item_dict['video_id'] = str(video_subdf[self.group_column].iloc[0])
+
         return item_dict
 
     def __len__(self):

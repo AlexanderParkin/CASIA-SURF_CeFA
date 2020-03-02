@@ -7,7 +7,7 @@ from at_learner_core.utils import sequence_transforms as s_transforms
 
 def get_config():
     test_config = {
-        'test_config_name': 'protocol_4_1',
+        'test_config_name': 'protocol_4_3',
         'out_path': None,
         'ngpu': 1,
         'dataset_configs': {
@@ -17,7 +17,7 @@ def get_config():
             'target_columns': ('label', 'target'),
             'transform_source': 'model_config',
             'group_column': 'video_id',
-            'protocol_name': 'protocol_4_1',
+            'protocol_name': 'protocol_4_3',
             'seq_transform_source': 'model_config',
             'test_process_config': {
                 'metric': {

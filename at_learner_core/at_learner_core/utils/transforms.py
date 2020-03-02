@@ -7,7 +7,9 @@ import torch
 
 import scipy.sparse
 from sklearn import svm
+from .pyflow import pyflow
 
+from torchvision.transforms import functional as F
 
 class CreateNewItem(object):
     def __init__(self, transforms, key, new_key):
@@ -28,6 +30,77 @@ class CreateNewItem(object):
         format_string += ')'
         return format_string
 
+class RandomZoom(object):
+    def __init__(self, size):
+        self.size_min = size[0]
+        self.size_max = size[1]
+                       
+    def __call__(self, imgs):
+        p_size = np.random.randint(self.size_min, self.size_max+1)
+        size = (int(p_size), int(p_size))
+        out = list(F.center_crop(img, size) for img in imgs)
+        if len(out) == 1:
+            return out[0]
+        else:
+            return out
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(size={}-{})'.format(self.size_min,self.size_max)
+
+
+class LiuOpticalFlowTransform(object):
+    def __init__(self, first_index, second_index):
+        self.first_index = first_index
+        self.second_index = second_index
+        
+    def __call__(self, images):
+        if type(self.first_index) == tuple:
+            first_index = np.random.randint(self.first_index[0], self.first_index[1]+1)
+        else:
+            first_index = self.first_index
+
+        if type(self.second_index) == tuple:
+            second_index = np.random.randint(self.second_index[0], self.second_index[1])
+        else:
+            second_index = self.second_index
+        
+        
+        im1 = images[first_index]
+        im2 = images[second_index]
+        im1 = np.array(im1).astype(float) / 255.
+        im2 = np.array(im2).astype(float) / 255.
+        u, v, im2W = pyflow.coarse2fine_flow(im1, im2, alpha=0.012, ratio=0.75, minWidth=20,
+                                             nOuterFPIterations=7, nInnerFPIterations=1,
+                                             nSORIterations=30, colType=0)
+        return [u.astype(np.float32), v.astype(np.float32)]
+    
+
+class SaveOnlyMaxDiff(object):
+    def __init__(self, first_index_range, second_index_range):
+        self.first_index_range = first_index_range
+        self.second_index_range = second_index_range
+
+    def __call__(self, images):
+        max_diff = 0
+        max_first_index, max_second_index = None, None
+        for first_index in self.first_index_range:
+            first_np_arr = np.array(images[first_index])
+            for second_index in self.second_index_range:
+                diff = np.abs(first_np_arr - np.array(images[second_index])).sum()
+                if diff > max_diff:
+                    max_first_index = first_index
+                    max_second_index = second_index
+                    max_diff = diff
+
+        return [images[max_first_index], images[max_second_index]]
+
+    def __repr__(self):
+        format_string = self.__class__.__name__ + '('
+        format_string += str(self.first_index_range) + ', '
+        format_string += str(self.second_index_range) + ', '
+        format_string += ')'
+        return format_string
+    
 
 class OpticalFlowTransform(object):
     def __init__(self, first_index, second_index, flow_type='all', return_type='PIL',
@@ -86,7 +159,6 @@ class OpticalFlowTransform(object):
                 return flows[..., 1]
             elif self.flow_type == 'all':
                 return flows
-
 
 
 class DeleteKeys(object):

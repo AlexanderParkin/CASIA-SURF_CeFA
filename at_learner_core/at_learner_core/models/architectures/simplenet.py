@@ -47,7 +47,6 @@ class SimpleNet112(nn.Module):
                 new_weights[k] = pretrained_weights['backbone.' + k]
             self.load_state_dict(new_weights)
 
-
     def forward(self, x):
         out = self.features(x)
         out = out.view(out.size(0), -1)

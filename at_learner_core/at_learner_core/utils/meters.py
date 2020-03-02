@@ -70,7 +70,7 @@ class ACERMeter(object):
     def __init__(self):
         self.target = np.ones(0)
         self.output = np.ones(0)
-        self.other_info = []
+        self.other_info = {}
 
     def reset(self):
         self.target = np.ones(0)

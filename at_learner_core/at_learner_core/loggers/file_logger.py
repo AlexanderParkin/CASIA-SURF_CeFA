@@ -28,7 +28,6 @@ class TestFileLogger(logger.Logger):
             if hasattr(self.root.test_info.metric, 'other_info'):
                 for k, v in self.root.test_info.metric.other_info.items():
                     df[k] = v
-
             df.to_csv(self.out_path, index=False)
 
     def close(self):

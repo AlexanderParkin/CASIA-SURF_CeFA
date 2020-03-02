@@ -65,21 +65,6 @@ class Runner(object):
         return
 
     def _check_best_epoch(self):
-        if self.config.test_process_config.metric.name == 'acer':
-            all_metrics_dict = self.test_info.metric.get_all_metrics()
-            for k, v in all_metrics_dict.items():
-                if k != 0.5:
-                    curr_acer = v['acer']
-                    break
-            if self.best_test_info.count == 0:
-                self.best_test_info.update(curr_acer)
-                self.best_epoch = True
-                return
-            else:
-                if curr_acer < self.best_test_info.val:
-                    self.best_test_info.update(curr_acer, 0)
-                    self.best_epoch = True
-                    return
         self.best_epoch = False
 
     def _init_loaders(self):

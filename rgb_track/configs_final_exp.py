@@ -92,7 +92,7 @@ test_image_transform = tv.transforms.Compose([
     transforms.Transform4EachKey([
         preprocess_transform,
     ], key_list=['data']),
-    transforms.CreateNewItem(transforms.LiuOpticalFlowTransform((0, 0), (L - 1, L)), 'data', 'optical_flow'),
+    transforms.CreateNewItem(transforms.LiuOpticalFlowTransform((0, 0), (15, 16)), 'data', 'optical_flow'),
     transforms.CreateNewItem(transforms.LiuOpticalFlowTransform(0, 1), 'data', 'optical_flow_start'),
 
     postprocess_transform
@@ -103,7 +103,7 @@ def get_config():
     config = {
         'head_config': {
             'task_name': 'rgb_track',
-            'exp_name': 'exp1_protocol41',
+            'exp_name': 'exp1_protocol41_restart',
             'text_comment': '',
         },
 
@@ -131,7 +131,7 @@ def get_config():
             },
             'testlist_configs': {
                 'dataset_name': 'VideoDataset',
-                'datalist_path': '/ssd/a.parkin/media/CASIA-SURF_CeFA/dev_list.txt',
+                'datalist_path': '/ssd/a.parkin/media/CASIA-SURF_CeFA/dev2_list.txt',
                 'protocol_name': 'protocol_4_1',
                 'data_columns': [('rgb_path', 'data')],
                 'target_columns': ('label', 'target'),
@@ -174,7 +174,6 @@ def get_config():
             'nclasses': 1,
             'loss': 'BCE',
             'pretrained': None,
-            'freeze_weights': None,
         },
 
         'logger_config': {
