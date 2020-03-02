@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 from rgb_trainer import RGBRunner
-from configs import get_config
+from configs_final_exp import get_config
 
 
 def main():

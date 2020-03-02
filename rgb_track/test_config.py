@@ -7,17 +7,17 @@ from at_learner_core.utils import sequence_transforms as s_transforms
 
 def get_config():
     test_config = {
-        'test_config_name': 'protocol_4_2',
+        'test_config_name': 'protocol_4_1',
         'out_path': None,
         'ngpu': 1,
         'dataset_configs': {
             'dataset_name': 'VideoDataset',
-            'datalist_path': '/ssd/a.parkin/media/CASIA-SURF_CeFA/dev2_list.txt',
+            'datalist_path': '/ssd/a.parkin/media/CASIA-SURF_CeFA/dev_test_list.txt',
             'data_columns': [('rgb_path', 'data')],
             'target_columns': ('label', 'target'),
             'transform_source': 'model_config',
             'group_column': 'video_id',
-            'protocol_name': 'protocol_4_2',
+            'protocol_name': 'protocol_4_1',
             'seq_transform_source': 'model_config',
             'test_process_config': {
                 'metric': {
@@ -32,17 +32,9 @@ def get_config():
         'logger_config': {
             'logger_type': 'log_combiner',
             'loggers': [
-                {'logger_type': 'test_terminal',
-                 'log_batch_interval': 5,
-                 'show_metrics': {
-                     'name': 'acer',
-                     'fpr': 0.01,
-                     'backdoor': True
-                 }},
                 {'logger_type': 'test_filelogger',
                  'show_metrics': {
                      'name': 'acer',
-                     'fpr': 0.01
                  },
                  }],
         }

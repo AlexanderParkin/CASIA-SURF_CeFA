@@ -5,6 +5,7 @@ from at_learner_core.models.wrappers.simple_classifier_wrapper import SimpleClas
 from at_learner_core.models.architectures import get_backbone
 from ..architectures.transformer import TransformerEncoder
 
+
 class RGBVideoWrapper(SimpleClassifierWrapper):
     def __init__(self, wrapper_config):
         super().__init__(wrapper_config)
@@ -14,7 +15,13 @@ class RGBVideoWrapper(SimpleClassifierWrapper):
                                                    pretrained=wrapper_config.pretrained,
                                                    get_feature_size=True)
         self.pooling = nn.AdaptiveAvgPool2d((1, feature_size))
-        self.transformer = TransformerEncoder(num_layers = 3, hidden_size = feature_size)
+        self.transformer = TransformerEncoder(num_layers=6, hidden_size=feature_size)
+
+        #self.classifier = nn.Sequential(
+        #    nn.Linear(feature_size, feature_size//2),
+        #    nn.ReLU(inplace=True),
+        #    nn.Linear(feature_size//2, wrapper_config.nclasses)
+        #)
         self.classifier = nn.Linear(feature_size, wrapper_config.nclasses)
     
     def forward(self, x):
@@ -26,10 +33,16 @@ class RGBVideoWrapper(SimpleClassifierWrapper):
         features = self.pooling(features)
         features = features.squeeze()
         output = self.classifier(features)
+        sigmoid_output = torch.sigmoid(output)
         if isinstance(self.loss, nn.modules.loss.CrossEntropyLoss):
             x['target'] = x['target'].squeeze()
-        output_dict = {'output': output.detach().cpu().numpy(),
+
+        output_dict = {'output': sigmoid_output.detach().cpu().numpy(),
                        'target': x['target'].detach().cpu().numpy()}
+        for k, v in x.items():
+            if k not in ['data', 'target']:
+                output_dict[k] = v
+
         loss = self.loss(output, x['target'])
         return output_dict, loss
 
