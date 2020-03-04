@@ -1,6 +1,6 @@
 # Chalearn CeFA Face Anti-Spoofing challenge
 
-##Step 1. 
+## Step 1. 
 Install at_learner_core
 ```
 cd /path/to/new/pip/environment
@@ -10,8 +10,18 @@ pip install -e /path/to/at_learner_core/repository/
 ```
 
 ## Step 2.
-Put pyflow to at_learner_core/utils and install
+Put pyflow to at_learner_core/utils, replace OpticalFlow.cpp to remove logs spamming to console and build
 Original github repository: https://github.com/pathak22/pyflow
+
+```bash
+cd at_learner_core/at_learner_core/utils
+git clone https://github.com/pathak22/pyflow.git
+cd pyflow/
+cp ../../../data/OpticalFlow.cpp src/OpticalFlow.cpp #Remove logs spamming to console
+python setup.py build_ext -i
+python demo.py # 
+```
+
 Please see installation instructions there.
 
 ## Step 3.
