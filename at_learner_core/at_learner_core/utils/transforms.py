@@ -220,8 +220,7 @@ class Transform4EachLabel(object):
             return self.transforms(input_dict)
         else:
             return input_dict
-    
-    
+
     def __repr__(self):
         format_string = self.__class__.__name__ + '('
         format_string += '\n'

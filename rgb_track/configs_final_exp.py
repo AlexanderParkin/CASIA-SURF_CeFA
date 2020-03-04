@@ -92,18 +92,17 @@ test_image_transform = tv.transforms.Compose([
     transforms.Transform4EachKey([
         preprocess_transform,
     ], key_list=['data']),
-    transforms.CreateNewItem(transforms.LiuOpticalFlowTransform((0, 0), (15, 16)), 'data', 'optical_flow'),
+    transforms.CreateNewItem(transforms.LiuOpticalFlowTransform(0, L-1), 'data', 'optical_flow'),
     transforms.CreateNewItem(transforms.LiuOpticalFlowTransform(0, 1), 'data', 'optical_flow_start'),
-
     postprocess_transform
 ])
 
 
-def get_config():
+def get_config(protocol_name):
     config = {
         'head_config': {
             'task_name': 'rgb_track',
-            'exp_name': 'exp1_protocol41_restart',
+            'exp_name': f'exp1_{protocol_name}',
             'text_comment': '',
         },
 
@@ -115,8 +114,8 @@ def get_config():
         'datalist_config': {
             'trainlist_config': {
                 'dataset_name': 'VideoDataset',
-                'datalist_path': '/ssd/a.parkin/media/CASIA-SURF_CeFA/train_list.txt',
-                'protocol_name': 'protocol_4_1',
+                'datalist_path': '../data/train_list.txt',
+                'protocol_name': protocol_name,
                 'data_columns': [('rgb_path', 'data')],
                 'target_columns': ('label', 'target'),
                 'group_column': 'video_id',
@@ -131,8 +130,8 @@ def get_config():
             },
             'testlist_configs': {
                 'dataset_name': 'VideoDataset',
-                'datalist_path': '/ssd/a.parkin/media/CASIA-SURF_CeFA/dev2_list.txt',
-                'protocol_name': 'protocol_4_1',
+                'datalist_path': '../data/dev_list.txt',
+                'protocol_name': protocol_name,
                 'data_columns': [('rgb_path', 'data')],
                 'target_columns': ('label', 'target'),
                 'group_column': 'video_id',
@@ -145,7 +144,7 @@ def get_config():
             'nthreads': 8,
             'ngpu': 1,
             'batchsize': 32,
-            'nepochs': 10,
+            'nepochs': 5,
             'resume': None,
             'optimizer_config': {
                 'name': 'Adam',
@@ -204,15 +203,17 @@ if __name__ == '__main__':
                         default='experiments/',
                         help='Path to save options')
     args = parser.parse_args()
-    configs = get_config()
-    out_path = os.path.join(args.savepath,
-                            configs.head_config.task_name,
-                            configs.head_config.exp_name)
-    os.makedirs(out_path, exist_ok=True)
-    if configs.checkpoint_config.out_path is None:
-        configs.checkpoint_config.out_path = out_path
-    filename = os.path.join(out_path,
-                            configs.head_config.task_name + '_' + configs.head_config.exp_name + '.config')
 
-    torch.save(configs, filename)
-    print('Options file was saved to ' + filename)
+    for idx in range(1, 4):
+        configs = get_config(f'protocol_4_{idx}')
+        out_path = os.path.join(args.savepath,
+                                configs.head_config.task_name,
+                                configs.head_config.exp_name)
+        os.makedirs(out_path, exist_ok=True)
+        if configs.checkpoint_config.out_path is None:
+            configs.checkpoint_config.out_path = out_path
+        filename = os.path.join(out_path,
+                                configs.head_config.task_name + '_' + configs.head_config.exp_name + '.config')
+
+        torch.save(configs, filename)
+        print('Options file was saved to ' + filename)
