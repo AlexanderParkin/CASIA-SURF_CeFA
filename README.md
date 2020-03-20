@@ -18,6 +18,7 @@ cd at_learner_core/at_learner_core/utils
 git clone https://github.com/pathak22/pyflow.git
 cd pyflow/
 cp ../../../../data/OpticalFlow.cpp src/OpticalFlow.cpp #Remove logs spamming to console
+pip install cython
 python setup.py build_ext -i
 python demo.py # 
 ```
