@@ -1,6 +1,9 @@
 # Chalearn CeFA Face Anti-Spoofing challenge
 This is code of our solution for Chalearn Single-modal face anti spofing attack detection challenge at CVPR 2020.
 
+Please if you use this code in your experiments, site the following paper:
+https://arxiv.org/abs/2006.16028
+
 Our solution based on two types of artificial transforms: rank pooling[1] and optical flow[2], combined in end-to-end pipeline for spoof detection with sequence augmentation to enrich the collection of fake tracks.
 
 ![Alt text](figures/pipeline.png?raw=true "Network Architecture")
